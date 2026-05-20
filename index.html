@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor de Turnos</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Gestor de Turnos</h1>
+      <p class="subtitle">Agrega personas y asigna un número para ordenar los turnos</p>
+    </header>
+
+    <div class="toolbar">
+      <button id="addBtn" class="btn-add">+ Agregar Persona</button>
+      <div class="toolbar-right">
+        <button id="clearBtn" class="btn-clear" disabled>Limpiar Números</button>
+        <span id="counter" class="counter">0 / 10</span>
+      </div>
+    </div>
+
+    <div id="listHeader" class="list-header hidden">
+      <div class="header-position">Pos.</div>
+      <div class="header-nombre">Nombre</div>
+      <div class="header-versiculo">Versículo</div>
+      <div class="header-actions"></div>
+    </div>
+
+    <div id="cardList" class="card-list"></div>
+
+    <div id="emptyState" class="empty-state">
+      <div class="empty-icon">👥</div>
+      <p>Aún no hay personas. Haz clic en <strong>+ Agregar Persona</strong> para comenzar.</p>
+    </div>
+  </div>
+
+  <footer class="footer">Creado por: Diego Perez</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
