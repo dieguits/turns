@@ -1,6 +1,6 @@
 const MAX = 10;
 
-// Each entry: { id, name, number }
+// Each entry: { id, name, versiculo, sortNumber, done }
 let people = [];
 let nextId = 1;
 
@@ -17,7 +17,7 @@ clearBtn.addEventListener('click', clearNumbers);
 function addPerson() {
   if (people.length >= MAX) return;
 
-  people.push({ id: nextId++, name: '', number: null, done: false });
+  people.push({ id: nextId++, name: '', versiculo: '', sortNumber: null, done: false });
   render();
 
   // Auto-focus the new name field
@@ -26,7 +26,7 @@ function addPerson() {
 }
 
 function clearNumbers() {
-  people.forEach(p => { p.number = null; p.done = false; });
+  people.forEach(p => { p.versiculo = ''; p.sortNumber = null; p.done = false; });
   sortAndRender();
 }
 
@@ -51,18 +51,36 @@ function onNameChange(id, value) {
   }
 }
 
-function onNumberChange(id, value) {
+function formatVersiculo(raw) {
+  // Normalize: replace spaces between digits with ", " then clean up extra commas/spaces
+  return raw
+    .trim()
+    .replace(/\s*,\s*/g, ', ')          // normalize existing commas
+    .replace(/(\d)\s+(\d)/g, '$1, $2')  // space between numbers → ", "
+    .replace(/,\s*$/, '')               // trailing comma
+    .replace(/^,\s*/, '');              // leading comma
+}
+
+function onVersiculoChange(id, rawValue) {
   const person = people.find(p => p.id === id);
   if (!person) return;
 
-  const parsed = value === '' ? null : parseFloat(value);
-  person.number = isNaN(parsed) ? null : parsed;
+  const formatted = formatVersiculo(rawValue);
+  person.versiculo = formatted;
+
+  // Sort by the first number in the string
+  const firstMatch = formatted.match(/\d+(\.\d+)?/);
+  person.sortNumber = firstMatch ? parseFloat(firstMatch[0]) : null;
 
   sortAndRender();
+
+  // Update the input to show the formatted value
+  const input = document.querySelector(`.card[data-id="${id}"] .input-number`);
+  if (input) input.value = formatted;
 }
 
 function sortAndRender() {
-  const hasNumbers = people.some(p => p.number !== null);
+  const hasNumbers = people.some(p => p.sortNumber !== null);
 
   if (!hasNumbers) {
     // No numbers assigned — sort alphabetically by name, unnamed go to the end
@@ -73,12 +91,22 @@ function sortAndRender() {
       return a.name.localeCompare(b.name);
     });
   } else {
-    // Sort by number ascending; unnumbered go to the end
+    // Sort by all numbers in sequence; unnumbered go to the end
     people.sort((a, b) => {
-      if (a.number === null && b.number === null) return 0;
-      if (a.number === null) return 1;
-      if (b.number === null) return -1;
-      return a.number - b.number;
+      if (a.sortNumber === null && b.sortNumber === null) return 0;
+      if (a.sortNumber === null) return 1;
+      if (b.sortNumber === null) return -1;
+
+      const numsA = (a.versiculo.match(/\d+(\.\d+)?/g) || []).map(Number);
+      const numsB = (b.versiculo.match(/\d+(\.\d+)?/g) || []).map(Number);
+      const len = Math.max(numsA.length, numsB.length);
+
+      for (let i = 0; i < len; i++) {
+        const na = i < numsA.length ? numsA[i] : -Infinity;
+        const nb = i < numsB.length ? numsB[i] : -Infinity;
+        if (na !== nb) return na - nb;
+      }
+      return 0;
     });
   }
 
@@ -89,7 +117,7 @@ function render(sorted = false) {
   // Sync counter and button state
   counter.textContent = `${people.length} / ${MAX}`;
   addBtn.disabled = people.length >= MAX;
-  clearBtn.disabled = !people.some(p => p.number !== null);
+  clearBtn.disabled = !people.some(p => p.versiculo !== '');
 
   // Toggle empty state and column header
   emptyState.classList.toggle('hidden', people.length > 0);
@@ -104,7 +132,7 @@ function render(sorted = false) {
     card.dataset.id = person.id;
 
     const badge = document.createElement('div');
-    badge.className = 'badge' + (index === 0 && person.number !== null ? ' top' : '');
+    badge.className = 'badge' + (index === 0 && person.sortNumber !== null ? ' top' : '');
     badge.textContent = index + 1;
 
     const nameInput = document.createElement('input');
@@ -116,11 +144,12 @@ function render(sorted = false) {
     nameInput.addEventListener('blur', e => onNameChange(person.id, e.target.value));
 
     const numberInput = document.createElement('input');
-    numberInput.type = 'number';
+    numberInput.type = 'text';
+    numberInput.inputMode = 'decimal';
     numberInput.className = 'input-number';
     numberInput.placeholder = 'Vers.';
-    numberInput.value = person.number !== null ? person.number : '';
-    numberInput.addEventListener('blur', e => onNumberChange(person.id, e.target.value));
+    numberInput.value = person.versiculo;
+    numberInput.addEventListener('blur', e => onVersiculoChange(person.id, e.target.value));
 
     const checkBtn = document.createElement('button');
     checkBtn.className = 'btn-check' + (person.done ? ' checked' : '');
